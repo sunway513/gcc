@@ -33,12 +33,17 @@
    that are part of the external ABI, and the lower case prefix "gomp"
    is used group items that are completely private to the library.  */
 
-#ifndef LIBGOMP_H 
+#ifndef LIBGOMP_H
 #define LIBGOMP_H 1
+#define MTAPI
 
 #include "config.h"
 #include "gstdint.h"
 #include "libgomp-plugin.h"
+
+#ifdef MTAPI
+#include <embb/mtapi/c/mtapi.h>
+#endif //mtapi
 
 #include <pthread.h>
 #include <stdbool.h>
@@ -175,7 +180,7 @@ struct gomp_work_share
   unsigned inline_ordered_team_ids[0];
 };
 
-/* This structure contains all of the thread-local data associated with 
+/* This structure contains all of the thread-local data associated with
    a thread team.  This is the data that must be saved when a thread
    encounters a nested PARALLEL construct.  */
 
@@ -185,7 +190,7 @@ struct gomp_team_state
   struct gomp_team *team;
 
   /* This is the work share construct which this thread is currently
-     processing.  Recall that with NOWAIT, not all threads may be 
+     processing.  Recall that with NOWAIT, not all threads may be
      processing the same construct.  */
   struct gomp_work_share *work_share;
 
@@ -230,7 +235,7 @@ struct gomp_memory_mapping;
    section 2.3.1.  Those described as having one copy per task are
    stored within the structure; those described as having one copy
    for the whole program are (naturally) global variables.  */
-   
+
 struct gomp_task_icv
 {
   unsigned long nthreads_var;

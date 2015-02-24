@@ -77,8 +77,8 @@ gomp_resolve_num_threads (unsigned specified, unsigned count)
   /* UINT_MAX stands for infinity.  */
   if (__builtin_expect (icv->thread_limit_var == UINT_MAX, 1)
       || max_num_threads == 1)
-    return max_num_threads;
-
+    /*return max_num_threads;*/
+    return 1;
   /* The threads_busy counter lives in thread_pool, if there
      isn't a thread_pool yet, there must be just one thread
      in the contention group.  If thr->team is NULL, this isn't
@@ -92,7 +92,8 @@ gomp_resolve_num_threads (unsigned specified, unsigned count)
 	num_threads = icv->thread_limit_var;
       if (pool)
 	pool->threads_busy = num_threads;
-      return num_threads;
+      /*return num_threads;*/
+    return 1;
     }
 
 #ifdef HAVE_SYNC_BUILTINS
@@ -116,7 +117,8 @@ gomp_resolve_num_threads (unsigned specified, unsigned count)
   gomp_mutex_unlock (&gomp_managed_threads_lock);
 #endif
 
-  return num_threads;
+  /*return num_threads;*/
+    return 1;
 }
 
 void
