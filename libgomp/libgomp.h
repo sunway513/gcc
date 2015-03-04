@@ -43,6 +43,15 @@
 
 #ifdef MTAPI
 #include <embb/mtapi/c/mtapi.h>
+#include <embb/base/c/base.h>
+#include <embb/base/c/log.h>
+#define MTAPI_CHECK_STATUS(status) \
+    if (MTAPI_SUCCESS != status) { \
+      embb_log_error("MTAPI C Example", "...error %d\n\n", status); \
+      abort(); \
+    }
+#define THIS_DOMAIN_ID 0
+#define THIS_NODE_ID 0
 #endif //mtapi
 
 #include <pthread.h>

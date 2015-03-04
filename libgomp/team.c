@@ -700,7 +700,8 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
 
   start_data = gomp_alloca (sizeof (struct gomp_thread_start_data)
 			    * (nthreads-i));
-
+  *
+/*In case of MTAPI, we will not create new threads here*/
   /* Launch new threads.  */
   for (; i < nthreads; ++i)
     {
