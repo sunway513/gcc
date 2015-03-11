@@ -312,6 +312,7 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
   MTAPI_CHECK_STATUS(status);
   printf("MTAPI node initialized\n");
 
+
 #endif  //end of MTAPI
   thr = gomp_thread ();
   nested = thr->ts.team != NULL;

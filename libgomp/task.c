@@ -29,7 +29,7 @@
 #include "libgomp.h"
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdio.h>
 typedef struct gomp_task_depend_entry *hash_entry_type;
 
 static inline void *
@@ -107,7 +107,25 @@ gomp_clear_parent (struct gomp_task *children)
 
 static void gomp_task_maybe_wait_for_dependencies (void **depend);
 
-/* Called when encountering an explicit task directive.  If IF_CLAUSE is
+#ifdef MTAPI
+void (*fn_ptr) (void *);
+void *data_ptr;
+
+static void ActionFunction(
+    const void* args,
+    mtapi_size_t arg_size,
+    void* result_buffer,
+    mtapi_size_t result_buffer_size,
+    const void* node_local_data,
+    mtapi_size_t node_local_data_size,
+    mtapi_task_context_t* task_context
+  ) {
+    fn_ptr((void*)args);
+}
+int count = 0;
+#endif //MTAPI
+
+    /* Called when encountering an explicit task directive.  If IF_CLAUSE is
    false, then we must not delay in executing the task.  If UNTIED is true,
    then the task may be executed by any member of the team.  */
 
@@ -129,8 +147,24 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
   if (flags & 1)
     flags &= ~1;
 #endif
-
-	fn (data);
+#ifdef MTAPI
+  /*printf("%d\n", i++);*/
+  fn_ptr = fn;
+  data_ptr = data;
+  mtapi_status_t status;
+  /* create action */
+/*  mtapi_action_hndl_t action_hndl;*/
+  /*action_hndl = */mtapi_action_create(
+    ACTION_ID,
+    (ActionFunction),
+    MTAPI_NULL,
+    0,
+    MTAPI_DEFAULT_ACTION_ATTRIBUTES,
+    &status
+  );
+  MTAPI_CHECK_STATUS(status);
+  printf("MTAPI action create done, count %d\n",count++);
+#endif //MTAPI
   /* If parallel or taskgroup has been cancelled, don't start new tasks.  */
   if (team
       && (gomp_team_barrier_cancelled (&team->barrier)

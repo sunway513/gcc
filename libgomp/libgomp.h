@@ -52,6 +52,7 @@
     }
 #define THIS_DOMAIN_ID 0
 #define THIS_NODE_ID 0
+#define ACTION_ID 1
 #endif //mtapi
 
 #include <pthread.h>
