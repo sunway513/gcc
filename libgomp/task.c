@@ -130,6 +130,7 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
     flags &= ~1;
 #endif
 
+	fn (data);
   /* If parallel or taskgroup has been cancelled, don't start new tasks.  */
   if (team
       && (gomp_team_barrier_cancelled (&team->barrier)

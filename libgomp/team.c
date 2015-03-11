@@ -29,7 +29,7 @@
 #include "libgomp.h"
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdio.h>
 /* This attribute contains PTHREAD_CREATE_DETACHED.  */
 pthread_attr_t gomp_thread_attr;
 
@@ -287,6 +287,32 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
   unsigned int affinity_count = 0;
   struct gomp_thread **affinity_thr = NULL;
 
+#ifdef MTAPI
+  mtapi_status_t status;
+  /*initialize the defaut mtapi node attributes*/
+  mtapi_node_attributes_t node_attr;
+  mtapi_nodeattr_init(&node_attr,&status);
+  MTAPI_CHECK_STATUS(status);
+  /*set the mtapi node attribute to be SMP by defualt*/
+  mtapi_nodeattr_set(
+    &node_attr,
+    MTAPI_NODE_TYPE,
+    MTAPI_ATTRIBUTE_VALUE(MTAPI_NODE_TYPE_SMP),
+    MTAPI_ATTRIBUTE_POINTER_AS_VALUE,
+    &status);
+  MTAPI_CHECK_STATUS(status);
+  /*initialize the master MTAPI Node for executation. */
+  mtapi_info_t info;
+  mtapi_initialize(
+    THIS_DOMAIN_ID,
+    THIS_NODE_ID,
+    &node_attr,
+    &info,
+    &status);
+  MTAPI_CHECK_STATUS(status);
+  printf("MTAPI node initialized\n");
+
+#endif  //end of MTAPI
   thr = gomp_thread ();
   nested = thr->ts.team != NULL;
   if (__builtin_expect (thr->thread_pool == NULL, 0))
@@ -700,7 +726,7 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
 
   start_data = gomp_alloca (sizeof (struct gomp_thread_start_data)
 			    * (nthreads-i));
-  *
+
 /*In case of MTAPI, we will not create new threads here*/
   /* Launch new threads.  */
   for (; i < nthreads; ++i)
