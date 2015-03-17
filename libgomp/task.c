@@ -813,7 +813,11 @@ GOMP_taskwait (void)
   struct gomp_task *to_free = NULL;
   struct gomp_taskwait taskwait;
   int do_wake = 0;
+  #ifdef MTAPI
+  /*Need to create an array of tasks, stored as TLS, need to send */
+    /*all of the tasks to the task wait funciton for explicit waiting.  */
 
+  #endif //MTAPI
   /* The acquire barrier on load of task->children here synchronizes
      with the write of a NULL in gomp_task_run_post_remove_parent.  It is
      not necessary that we synchronize with other non-NULL writes at
