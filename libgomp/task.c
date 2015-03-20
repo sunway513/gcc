@@ -110,7 +110,7 @@ static void gomp_task_maybe_wait_for_dependencies (void **depend);
 #ifdef MTAPI
 void (*fn_ptr) (void *);
 void *data_ptr;
-
+mtapi_job_hndl_t job_hndl;
 static void ActionFunction(
     const void* args,
     mtapi_size_t arg_size,
@@ -153,8 +153,8 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
   data_ptr = data;
   mtapi_status_t status;
   /* create action */
-/*  mtapi_action_hndl_t action_hndl;*/
-  /*action_hndl = */mtapi_action_create(
+  /*mtapi_action_hndl_t action_hndl;*/ //only need the action handle when deleting the action
+  /*action_hndl =*/ mtapi_action_create(
     ACTION_ID,
     (ActionFunction),
     MTAPI_NULL,
@@ -163,7 +163,25 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
     &status
   );
   MTAPI_CHECK_STATUS(status);
-  printf("MTAPI action create done, count %d\n",count++);
+  /*printf("MTAPI action create done, count %d\n",count);*/
+  mtapi_task_hndl_t task; //only needed when deleting the task
+  job_hndl = mtapi_job_get(Job_ID, THIS_DOMAIN_ID, &status);
+  MTAPI_CHECK_STATUS(status);
+  /*printf("MTAPI get job handle done, count %d\n",count++);*/
+  task = mtapi_task_start(
+      MTAPI_TASK_ID_NONE,
+      job_hndl,
+      data,
+      sizeof(data),
+      NULL,
+      sizeof(NULL),
+      MTAPI_DEFAULT_TASK_ATTRIBUTES,
+      MTAPI_GROUP_NONE,
+      &status
+  );
+  mtapi_task_wait(task,MTAPI_INFINITE, &status);
+  MTAPI_CHECK_STATUS(status);
+
 #endif //MTAPI
   /* If parallel or taskgroup has been cancelled, don't start new tasks.  */
   if (team
@@ -334,7 +352,7 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
 			  task->num_dependees++;
 			  continue;
 			}
-		      /* We already have some other dependency on tsk
+		      /* We already have some other dependency on task
 			 from earlier depend clause.  */
 		      else if (tsk->dependers->n_elem
 			       && (tsk->dependers->elem[tsk->dependers->n_elem
