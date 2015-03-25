@@ -35,7 +35,7 @@
 
 #ifndef LIBGOMP_H
 #define LIBGOMP_H 1
-#define MTAPI
+//#define MTAPI
 
 #include "config.h"
 #include "gstdint.h"
@@ -455,7 +455,11 @@ struct gomp_thread
 
   /* This is the task that the thread is currently executing.  */
   struct gomp_task *task;
-
+  #ifdef MTAPI
+  //This is the task handle for the mtapi tasks
+  mtapi_task_hndl_t task_hndl[MTAPI_NODE_MAX_TASKS_DEFAULT];
+  int mtapi_task_count;
+#endif
   /* This semaphore is used for ordered loops.  */
   gomp_sem_t release;
 

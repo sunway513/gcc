@@ -179,9 +179,12 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
       MTAPI_GROUP_NONE,
       &status
   );
-  mtapi_task_wait(task,MTAPI_INFINITE, &status);
+  /*printf("mtapi_task_count is %d\n", thr->mtapi_task_count);*/
+  thr->task_hndl[thr->mtapi_task_count++] = task;
+//in the current implementation we need the task wait to work around the dependancy
+//analysis of the tasks.
+  /*mtapi_task_wait(task,MTAPI_INFINITE, &status);*/
   MTAPI_CHECK_STATUS(status);
-
 #endif //MTAPI
   /* If parallel or taskgroup has been cancelled, don't start new tasks.  */
   if (team
@@ -832,9 +835,13 @@ GOMP_taskwait (void)
   struct gomp_taskwait taskwait;
   int do_wake = 0;
   #ifdef MTAPI
+  int i;
+  mtapi_status_t status;
   /*Need to create an array of tasks, stored as TLS, need to send */
     /*all of the tasks to the task wait funciton for explicit waiting.  */
-
+  for(i=0;i<thr->mtapi_task_count;i++){
+     mtapi_task_wait(thr->task_hndl[i],MTAPI_INFINITE, &status);
+  }
   #endif //MTAPI
   /* The acquire barrier on load of task->children here synchronizes
      with the write of a NULL in gomp_task_run_post_remove_parent.  It is

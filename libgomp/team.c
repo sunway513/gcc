@@ -286,6 +286,7 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
   unsigned int s = 0, rest = 0, p = 0, k = 0;
   unsigned int affinity_count = 0;
   struct gomp_thread **affinity_thr = NULL;
+  thr = gomp_thread ();
 
 #ifdef MTAPI
   mtapi_status_t status;
@@ -311,10 +312,9 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
     &status);
   MTAPI_CHECK_STATUS(status);
   printf("MTAPI node initialized\n");
-
-
+  //initialize the mtapi_task_count in the current thread
+  thr->mtapi_task_count = 0;
 #endif  //end of MTAPI
-  thr = gomp_thread ();
   nested = thr->ts.team != NULL;
   if (__builtin_expect (thr->thread_pool == NULL, 0))
     {
