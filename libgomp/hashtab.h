@@ -312,7 +312,7 @@ htab_expand (htab_t htab)
   htab_free (htab);
   return nhtab;
 }
-
+#ifndef MTAPI
 /* This function searches for a hash table entry equal to the given
    element.  It cannot be used to insert or delete an element.  */
 
@@ -344,7 +344,7 @@ htab_find (htab_t htab, const hash_entry_type element)
 	return entry;
     }
 }
-
+#endif //MTAPI
 /* This function searches for a hash table slot containing an entry
    equal to the given element.  To delete an entry, call this with
    insert=NO_INSERT, then call htab_clear_slot on the slot returned

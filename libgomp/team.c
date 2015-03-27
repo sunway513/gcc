@@ -268,20 +268,8 @@ gomp_free_thread (void *arg __attribute__((unused)))
 }
 
 #ifdef MTAPI
-extern void (*fn_ptr) (void*);
-//define the action function for task executation
-static void ActionFunction(
-    const void* args,
-    mtapi_size_t arg_size,
-    void* result_buffer,
-    mtapi_size_t result_buffer_size,
-    const void* node_local_data,
-    mtapi_size_t node_local_data_size,
-    mtapi_task_context_t* task_context
-  ) {
-  struct gomp_thread *thr = gomp_thread();
-  thr->fn((void*)args);
-}
+/*extern void (*fn_ptr) (void*);*/
+
 #endif
 
 
@@ -331,21 +319,8 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
   printf("MTAPI node initialized\n");
   //initialize the mtapi_task_count in the current thread
   /*thr->mtapi_task_count = 0;*/
-  //create action hndl for further reference
-  thr->action_hndl = mtapi_action_create(
-    Job_ID,
-    (ActionFunction),
-    MTAPI_NULL,
-    0,
-    MTAPI_DEFAULT_ACTION_ATTRIBUTES,
-    &status
-  );
-  MTAPI_CHECK_STATUS(status);
-  //create task group
+ //create task group
   thr->group_hndl = mtapi_group_create(MTAPI_GROUP_ID_NONE, MTAPI_NULL,&status);
-  MTAPI_CHECK_STATUS(status);
-  //get the job handle
-  thr->job_hndl = mtapi_job_get(Job_ID, THIS_DOMAIN_ID, &status);
   MTAPI_CHECK_STATUS(status);
 #endif  //end of MTAPI
   nested = thr->ts.team != NULL;
@@ -907,16 +882,16 @@ gomp_team_end (void)
   struct gomp_team *team = thr->ts.team;
 
 #ifdef MTAPI
-  mtapi_status_t status;
+  /*mtapi_status_t status;*/
   //delete the mtapi action after executation
-  mtapi_action_delete(thr->action_hndl, 100,&status);
-  MTAPI_CHECK_STATUS(status);
+  /*mtapi_action_delete(thr->action_hndl, 100,&status);*/
+  /*MTAPI_CHECK_STATUS(status);*/
   //delete task group
-  mtapi_group_delete(thr->group_hndl, &status);
-  MTAPI_CHECK_STATUS(status);
+  /*mtapi_group_delete(thr->group_hndl, &status);*/
+  /*MTAPI_CHECK_STATUS(status);*/
   //finalize the node
-  mtapi_finalize(&status);
-  MTAPI_CHECK_STATUS(status);
+  /*mtapi_finalize(&status);*/
+  /*MTAPI_CHECK_STATUS(status);*/
 
 #endif
   /* This barrier handles all pending explicit threads.

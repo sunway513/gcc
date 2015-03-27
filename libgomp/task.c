@@ -105,13 +105,26 @@ gomp_clear_parent (struct gomp_task *children)
     while (task != children);
 }
 
-static void gomp_task_maybe_wait_for_dependencies (void **depend);
+/*static void gomp_task_maybe_wait_for_dependencies (void **depend);*/
 
 #ifdef MTAPI
-/*void (*fn_ptr) (void *);*/
+void (*fn_ptr) (void *);
 /*mtapi_job_hndl_t job_hndl;*/
 //count of how many tasks creaeted
-int count=0;
+/*int count=0;*/
+//define the action function for task executation
+static void ActionFunction(
+    const void* args,
+    mtapi_size_t arg_size,
+    void* result_buffer,
+    mtapi_size_t result_buffer_size,
+    const void* node_local_data,
+    mtapi_size_t node_local_data_size,
+    mtapi_task_context_t* task_context
+  ) {
+  /*struct gomp_thread *thr = gomp_thread();*/
+  fn_ptr((void*)args);
+}
 #endif //MTAPI
 
     /* Called when encountering an explicit task directive.  If IF_CLAUSE is
@@ -124,8 +137,9 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
 	   void **depend)
 {
   struct gomp_thread *thr = gomp_thread ();
+#ifndef MTAPI
   struct gomp_team *team = thr->ts.team;
-
+#endif //MTAPI
 #ifdef HAVE_BROKEN_POSIX_SEMAPHORES
   /* If pthread_mutex_* is used for omp_*lock*, then each task must be
      tied to one thread all the time.  This means UNTIED tasks must be
@@ -138,13 +152,24 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
 #endif
 #ifdef MTAPI
   /*assign the function pointer to the TLS storage*/
-  thr->fn = fn;
+  fn_ptr = fn;
   mtapi_status_t status;
   /* create action */
-
-  printf("MTAPI task create, count %d\n",count);
-  /*mtapi_task_hndl_t task;*/
+  //create action hndl for further reference
+  thr->action_hndl = mtapi_action_create(
+    Job_ID,
+    (ActionFunction),
+    MTAPI_NULL,
+    0,
+    MTAPI_DEFAULT_ACTION_ATTRIBUTES,
+    &status
+  );
   MTAPI_CHECK_STATUS(status);
+  //get the job handle
+  thr->job_hndl = mtapi_job_get(Job_ID, THIS_DOMAIN_ID, &status);
+  MTAPI_CHECK_STATUS(status);
+
+  /*printf("MTAPI task create, count %d\n",count);*/
   /*task =*/
   mtapi_task_start(
       MTAPI_TASK_ID_NONE,
@@ -157,14 +182,14 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
       thr->group_hndl,
       &status
   );
-  printf("MTAPI task started, count %d\n",count++);
+  /*printf("MTAPI task started, count %d\n",count++);*/
   /*printf("mtapi_task_count is %d\n", thr->mtapi_task_count);*/
   /*thr->task_hndl[thr->mtapi_task_count++] = task;*/
 //in the current implementation we need the task wait to work around the dependancy
 //analysis of the tasks.
   /*mtapi_task_wait(task,MTAPI_INFINITE, &status);*/
   //MTAPI_CHECK_STATUS(status);
-#endif //MTAPI
+#else //MTAPI
   /* If parallel or taskgroup has been cancelled, don't start new tasks.  */
   if (team
       && (gomp_team_barrier_cancelled (&team->barrier)
@@ -445,6 +470,7 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
       if (do_wake)
 	gomp_team_barrier_wake (&team->barrier, 1);
     }
+#endif
 }
 
 static inline bool
@@ -935,7 +961,7 @@ GOMP_taskwait (void)
 
 /* This is like GOMP_taskwait, but we only wait for tasks that the
    upcoming task depends on.  */
-
+#ifndef MTAPI
 static void
 gomp_task_maybe_wait_for_dependencies (void **depend)
 {
@@ -1097,7 +1123,7 @@ gomp_task_maybe_wait_for_dependencies (void **depend)
 	}
     }
 }
-
+#endif //MTAPI
 /* Called when encountering a taskyield directive.  */
 
 void
