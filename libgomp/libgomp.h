@@ -35,7 +35,7 @@
 
 #ifndef LIBGOMP_H
 #define LIBGOMP_H 1
-//#define MTAPI
+#define MTAPI
 
 #include "config.h"
 #include "gstdint.h"
@@ -52,7 +52,7 @@
     }
 #define THIS_DOMAIN_ID 0
 #define THIS_NODE_ID 0
-#define ACTION_ID 1
+
 #define Job_ID 1
 #endif //mtapi
 
@@ -457,8 +457,11 @@ struct gomp_thread
   struct gomp_task *task;
   #ifdef MTAPI
   //This is the task handle for the mtapi tasks
-  mtapi_task_hndl_t task_hndl[MTAPI_NODE_MAX_TASKS_DEFAULT];
-  int mtapi_task_count;
+  //mtapi_task_hndl_t task_hndl[MTAPI_NODE_MAX_TASKS_DEFAULT];
+  //int mtapi_task_count;
+  mtapi_action_hndl_t action_hndl;
+  mtapi_group_hndl_t group_hndl;
+  mtapi_job_hndl_t job_hndl;
 #endif
   /* This semaphore is used for ordered loops.  */
   gomp_sem_t release;

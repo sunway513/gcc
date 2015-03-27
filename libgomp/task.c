@@ -108,21 +108,10 @@ gomp_clear_parent (struct gomp_task *children)
 static void gomp_task_maybe_wait_for_dependencies (void **depend);
 
 #ifdef MTAPI
-void (*fn_ptr) (void *);
-void *data_ptr;
-mtapi_job_hndl_t job_hndl;
-static void ActionFunction(
-    const void* args,
-    mtapi_size_t arg_size,
-    void* result_buffer,
-    mtapi_size_t result_buffer_size,
-    const void* node_local_data,
-    mtapi_size_t node_local_data_size,
-    mtapi_task_context_t* task_context
-  ) {
-    fn_ptr((void*)args);
-}
-int count = 0;
+/*void (*fn_ptr) (void *);*/
+/*mtapi_job_hndl_t job_hndl;*/
+//count of how many tasks creaeted
+int count=0;
 #endif //MTAPI
 
     /* Called when encountering an explicit task directive.  If IF_CLAUSE is
@@ -148,43 +137,33 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
     flags &= ~1;
 #endif
 #ifdef MTAPI
-  /*printf("%d\n", i++);*/
-  fn_ptr = fn;
-  data_ptr = data;
+  /*assign the function pointer to the TLS storage*/
+  thr->fn = fn;
   mtapi_status_t status;
   /* create action */
-  /*mtapi_action_hndl_t action_hndl;*/ //only need the action handle when deleting the action
-  /*action_hndl =*/ mtapi_action_create(
-    ACTION_ID,
-    (ActionFunction),
-    MTAPI_NULL,
-    0,
-    MTAPI_DEFAULT_ACTION_ATTRIBUTES,
-    &status
-  );
+
+  printf("MTAPI task create, count %d\n",count);
+  /*mtapi_task_hndl_t task;*/
   MTAPI_CHECK_STATUS(status);
-  /*printf("MTAPI action create done, count %d\n",count);*/
-  mtapi_task_hndl_t task; //only needed when deleting the task
-  job_hndl = mtapi_job_get(Job_ID, THIS_DOMAIN_ID, &status);
-  MTAPI_CHECK_STATUS(status);
-  /*printf("MTAPI get job handle done, count %d\n",count++);*/
-  task = mtapi_task_start(
+  /*task =*/
+  mtapi_task_start(
       MTAPI_TASK_ID_NONE,
-      job_hndl,
+      thr->job_hndl,
       data,
       sizeof(data),
       NULL,
       sizeof(NULL),
       MTAPI_DEFAULT_TASK_ATTRIBUTES,
-      MTAPI_GROUP_NONE,
+      thr->group_hndl,
       &status
   );
+  printf("MTAPI task started, count %d\n",count++);
   /*printf("mtapi_task_count is %d\n", thr->mtapi_task_count);*/
-  thr->task_hndl[thr->mtapi_task_count++] = task;
+  /*thr->task_hndl[thr->mtapi_task_count++] = task;*/
 //in the current implementation we need the task wait to work around the dependancy
 //analysis of the tasks.
   /*mtapi_task_wait(task,MTAPI_INFINITE, &status);*/
-  MTAPI_CHECK_STATUS(status);
+  //MTAPI_CHECK_STATUS(status);
 #endif //MTAPI
   /* If parallel or taskgroup has been cancelled, don't start new tasks.  */
   if (team
@@ -835,13 +814,15 @@ GOMP_taskwait (void)
   struct gomp_taskwait taskwait;
   int do_wake = 0;
   #ifdef MTAPI
-  int i;
+  /*int i;*/
   mtapi_status_t status;
   /*Need to create an array of tasks, stored as TLS, need to send */
     /*all of the tasks to the task wait funciton for explicit waiting.  */
-  for(i=0;i<thr->mtapi_task_count;i++){
-     mtapi_task_wait(thr->task_hndl[i],MTAPI_INFINITE, &status);
-  }
+  /*for(i=0;i<thr->mtapi_task_count;i++){*/
+     /*mtapi_task_wait(thr->task_hndl[i],MTAPI_INFINITE, &status);*/
+  /*}*/
+  mtapi_group_wait_all(thr->group_hndl,MTAPI_INFINITE,&status);
+  MTAPI_CHECK_STATUS(status);
   #endif //MTAPI
   /* The acquire barrier on load of task->children here synchronizes
      with the write of a NULL in gomp_task_run_post_remove_parent.  It is
